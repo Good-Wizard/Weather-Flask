@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Status 🌦️</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <form id="weather-form" class="form" method="get" action="/">
+            <h1>Weather Status</h1>
+            <br>
+            <div class="input-container">
+                <input type="text" id="city" name="city" required autocomplete="off">
+                <label for="city" class="label">Enter City Name</label>
+                <div class="underline"></div>
+            </div>
+            <br>
+            <label>Temperature Unit 🌡️</label>
+            <br>
+            <div class="radio-inputs">
+                <label class="radio">
+                    <input type="radio" name="units" value="metric" checked>
+                    <span class="name">Celsius</span>
+                </label>
+                <label class="radio">
+                    <input type="radio" name="units" value="imperial">
+                    <span class="name">Fahrenheit</span>
+                </label>
+            </div>
+            <br>
+            <button type="submit" class="box">
+                Go ahead!
+            </button>
+        </form>
+        
+        <div id="weather-info" class="weather-result" style="display: none;">
+            <div id="weather-icon" class="weather-icon">
+                <img id="weather-icon-img" src="{{ url_for('static', filename='icons/placeholder_icon.png') }}" alt="Weather Icon">
+            </div>
+            <h2 id="weather-city">Weather in <span id="city-name"></span></h2>
+            <div class="weather-detail">
+                <p id="weather-description"><strong>Description:</strong> <span id="desc"></span></p>
+                <p id="weather-temp"><strong>Temperature:</strong> <span id="temp"></span>°</p>
+                <p id="weather-humidity"><strong>Humidity:</strong> <span id="humidity"></span>%</p>
+                <p id="weather-wind"><strong>Wind Speed:</strong> <span id="wind-speed"></span> m/s</p>
+                <p id="weather-pressure"><strong>Air Pressure:</strong> <span id="pressure"></span> hPa</p>
+            </div>
+            <br>
+            <button id="back-btn" class="box">← Back</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('weather-form');
+            const weatherInfo = document.getElementById('weather-info');
+            const cityName = document.getElementById('city-name');
+            const weatherIcon = document.getElementById('weather-icon');
+            const weatherDesc = document.getElementById('desc');
+            const weatherTemp = document.getElementById('temp');
+            const weatherHumidity = document.getElementById('humidity');
+            const weatherWind = document.getElementById('wind-speed');
+            const weatherPressure = document.getElementById('pressure');
+            const backBtn = document.getElementById('back-btn');
+
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const formData = new FormData(form);
+                const city = formData.get('city');
+                const units = formData.get('units');
+
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        const response = await fetch(`/weather?city=${encodeURIComponent(city)}&units=${units}`);
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            displayWeather(data);
+                            break; // Exit loop if the request is successful
+                        } else {
+                            throw new Error('Error fetching weather data.');
+                        }
+                    } catch (error) {
+                        if (attempt === 3) {
+                            alert('Error fetching weather data. Please try again later.');
+                            window.location.reload();
+                        }
+                    }
+                }
+            });
+
+            function displayWeather(data) {
+                cityName.textContent = data.city;
+                weatherDesc.textContent = data.weather_description;
+                weatherTemp.textContent = data.temperature;
+                weatherHumidity.textContent = data.humidity;
+                weatherWind.textContent = data.wind_speed;
+                weatherPressure.textContent = data.pressure;
+
+                // Set weather icon dynamically based on weather condition
+                const iconImg = document.getElementById('weather-icon-img');
+                if (data.weather_icon === '01d') {
+                    iconImg.src = '{{ url_for("static", filename="icons/sunny.png") }}';
+                    iconImg.alt = 'Sunny';
+                } else if (data.weather_icon === '09d' || data.weather_icon === '10d') {
+                    iconImg.src = '{{ url_for("static", filename="icons/rainy.png") }}';
+                    iconImg.alt = 'Rainy';
+                } else if (data.weather_icon === '13d') {
+                    iconImg.src = '{{ url_for("static", filename="icons/snowy.png") }}';
+                    iconImg.alt = 'Snowy';
+                } else {
+                    iconImg.src = '{{ url_for("static", filename="icons/default.png") }}';
+                    iconImg.alt = 'Weather Icon';
+                }
+
+                // Hide form and show weather info section
+                form.style.display = 'none';
+                weatherInfo.style.display = 'flex';
+            }
+
+            backBtn.addEventListener('click', function() {
+                // Redirect to the root route
+                window.location.href = "/";
+            });
+        });
+    </script>
+</body>
+</html>
